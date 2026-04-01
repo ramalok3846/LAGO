@@ -1,1 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAGO | SYSTEM UPDATE</title>
+    <style>
+        :root {
+            --bg-main: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --accent: #000000;
+            --danger: #ff4d4d;
+            --text-main: #1a1a1a;
+            --text-sub: #666666;
+            --border: #e0e0e0;
+        }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', -apple-system, sans-serif; }
+        body { background: var(--bg-main); color: var(--text-main); overflow: hidden; height: 100vh; }
+
+        /* Navigation */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 5%; background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+        }
+        .logo { font-weight: 900; font-size: 24px; cursor: pointer; color: var(--accent); }
+        .btn-black { background: var(--accent); color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        /* Main Page */
+        .page { padding-top: 70px; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+        /* System Check Modal */
+        #check-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98); z-index: 5000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .spinner {
+            width: 70px; height: 70px; border: 6px solid #f3f3f3;
+            border-top: 6px solid #000; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 25px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .progress-bar { width: 250px; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 20px; }
+        .progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.4s ease-out; }
+
+        /* Fake Alert Style */
+        .fake-alert {
+            position: fixed; width: 310px; background: white; border: 2.5px solid #000;
+            box-shadow: 10px 10px 0px rgba(0,0,0,1); z-index: 10001; padding: 25px;
+            animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .fake-alert h3 { font-size: 15px; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px; color: #ff0000; font-weight: 900; }
+        .fake-alert p { font-size: 13px; line-height: 1.6; margin-bottom: 18px; font-weight: 700; color: #333; }
+        .fake-alert button { width: 100%; padding: 10px; background: #000; color: #fff; border: none; font-weight: 900; cursor: pointer; letter-spacing: 1px; }
+
+        @keyframes pop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Overlay */
+        #block-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); z-index: 10000; display: none;
+            flex-direction: column; align-items: center; justify-content: center; color: white;
+            text-align: center; padding: 20px; backdrop-filter: blur(10px);
+        }
+
+        .link-container { display: flex; gap: 12px; margin-top: 40px; flex-wrap: wrap; justify-content: center; }
+        .link-btn { padding: 15px 25px; border-radius: 10px; border: none; font-weight: 800; transition: 0.2s; font-size: 15px; cursor: pointer; text-decoration: none; }
+        .btn-white { background: white; color: black; }
+        .btn-purple { background: #8e44ad; color: white; }
+        .btn-gray { background: #2c3e50; color: white; }
+        .link-btn:hover { transform: scale(1.05); }
+
+        #game-counter {
+            position: fixed; top: 25px; left: 50%; transform: translateX(-50%);
+            background: #ff0000; color: white; padding: 12px 30px; border-radius: 50px;
+            font-weight: 900; z-index: 10002; display: none; box-shadow: 0 4px 15px rgba(255,0,0,0.4);
+        }
+
+        #toast {
+            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
+            background: #000; color: white; padding: 15px 30px; border-radius: 15px;
+            font-size: 14px; font-weight: 600; z-index: 11000; display: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">LAGO</div>
+        <button class="btn-black" onclick="triggerCheck()">STUDIO 접속</button>
+    </header>
+
+    <div class="page">
+        <h1 style="font-size: 3.5rem; font-weight: 900; letter-spacing: -2px; margin-bottom: 20px;">WHITE LAGO</h1>
+        <p style="color: #666; font-size: 1.1rem; margin-bottom: 40px;">만우절 기념 최신 보안 업데이트 패치가 적용되었습니다.</p>
+        <button class="btn-black" style="padding: 22px 70px; font-size: 1.3rem; border-radius: 15px;" onclick="triggerCheck()">시작하기</button>
+    </div>
+
+    <!-- 점검 중 팝업 (로딩) -->
+    <div id="check-modal">
+        <div class="spinner"></div>
+        <h2 style="font-weight: 900; font-size: 22px;">보안 시스템 점검 중</h2>
+        <p style="color: #888; margin-top: 12px; font-size: 14px;">무결성 검사 및 업데이트를 확인하고 있습니다...</p>
+        <div class="progress-bar"><div id="p-fill" class="progress-fill"></div></div>
+    </div>
+
+    <!-- 차단 화면 (최종 단계) -->
+    <div id="block-overlay">
+        <h1 style="font-size: 3rem; color: #ff4d4d; font-weight: 900; margin-bottom: 15px;">ACCESS DENIED</h1>
+        <p id="status-msg" style="font-size: 1.3rem; margin-bottom: 25px; font-weight: 700;">보안 규칙에 따라 위험한 프로그램으로 판정되어 사용할 수 없습니다.</p>
+        <p style="color: #ccc; font-size: 14px;">이 사이트는 위험 요소가 감지되어 영구 차단 조치되었습니다.</p>
+        
+        <div class="link-container">
+            <button onclick="navExternal('https://www.ramalok.kr')" class="link-btn btn-white">홈페이지</button>
+            <button onclick="navExternal('https://ramalok3846.github.io/LAGO')" class="link-btn btn-gray">LAGO</button>
+            <button onclick="navExternal('https://ramalok3846.github.io/class-chat-6-7/v5.html')" class="link-btn btn-purple">퍼플톡</button>
+        </div>
+    </div>
+
+    <!-- 확인 누르기 게임용 카운터 -->
+    <div id="game-counter">점검 중... 확인 버튼을 눌러주세요: <span id="cnt">10</span></div>
+    
+    <div id="toast"></div>
+
+    <script>
+        let alertsClosed = 0;
+        const totalAlerts = 10;
+        let inactivityTimer;
+        let gameActive = false;
+
+        // 외부 링크 이동 함수
+        function navExternal(url) {
+            window.open(url, '_blank');
+        }
+
+        // 3초 미활동 체크 함수
+        function resetInactivityTimer() {
+            if (!gameActive) return; // 게임 중이거나 차단 화면에서만 작동
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                window.location.href = "https://www.ramalok.kr";
+            }, 3000);
+        }
+
+        // 1. 점검 중 로딩 팝업
+        async function triggerCheck() {
+            const modal = document.getElementById('check-modal');
+            const fill = document.getElementById('p-fill');
+            modal.style.display = 'flex';
+            
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    modal.style.display = 'none';
+                    initAlertGame(); // 2단계: 확인 누르기 게임으로 이동
+                } else {
+                    width += Math.random() * 20;
+                    if(width > 100) width = 100;
+                    fill.style.width = width + '%';
+                }
+            }, 400);
+        }
+
+        // 2. 확인 누르기 게임 시작 (팝업 10개 띄우기)
+        function initAlertGame() {
+            gameActive = true;
+            document.getElementById('game-counter').style.display = 'block';
+            alertsClosed = 0;
+            updateCounter();
+
+            // 상호작용 추적 시작 (3초 타이머)
+            window.addEventListener('mousemove', resetInactivityTimer);
+            window.addEventListener('touchstart', resetInactivityTimer);
+            resetInactivityTimer();
+
+            for(let i=0; i<totalAlerts; i++) {
+                setTimeout(() => createAlert(), i * 150);
+            }
+        }
+
+        function createAlert() {
+            const alert = document.createElement('div');
+            alert.className = 'fake-alert';
+            const x = Math.random() * (window.innerWidth - 320);
+            const y = Math.random() * (window.innerHeight - 250);
+            alert.style.left = Math.max(10, x) + 'px';
+            alert.style.top = Math.max(10, y) + 'px';
+            
+            alert.innerHTML = `
+                <h3>⚠️ SYSTEM CHECK</h3>
+                <p>보안 점검을 위해 이 팝업의 확인 버튼을 클릭하십시오.</p>
+                <button onclick="closeAlert(this)">확인</button>
+            `;
+            document.body.appendChild(alert);
+        }
+
+        function closeAlert(btn) {
+            btn.parentElement.remove();
+            alertsClosed++;
+            updateCounter();
+            resetInactivityTimer(); // 버튼 누를 때마다 타이머 리셋
+
+            if(alertsClosed >= totalAlerts) {
+                // 3단계: 차단 화면 표시
+                document.getElementById('game-counter').style.display = 'none';
+                document.getElementById('block-overlay').style.display = 'flex';
+                showToast("시스템 치명적 오류 발생: 차단됨");
+            }
+        }
+
+        function updateCounter() {
+            document.getElementById('cnt').innerText = totalAlerts - alertsClosed;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>
